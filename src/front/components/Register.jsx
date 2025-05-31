@@ -164,18 +164,7 @@ const Register = () => {
                 ))}
               </select>
             </div>
-            {/* Rol */}
-            <div className="col-12 col-md-6 col-lg-4">
-              <label className="form-label text-white">Rol</label>
-              <input
-                type="text"
-                name="role"
-                className="form-control"
-                style={inputStyle}
-                value={formData.role}
-                readOnly
-              />
-            </div>
+
             {/* Nivel educativo */}
             <div className="col-12 col-md-6 col-lg-4">
               <label className="form-label text-white">Nivel Educativo</label>

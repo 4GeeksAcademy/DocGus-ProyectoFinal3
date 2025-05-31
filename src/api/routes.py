@@ -1,4 +1,6 @@
 from flask import request, jsonify, Blueprint
+from api.utils import patient_required
+from api.utils import student_required
 from flask_jwt_extended import (
     create_access_token, jwt_required, get_jwt_identity
 )
@@ -133,14 +135,20 @@ def update_profile():
 @api.route('/users/pending', methods=['GET'])
 @jwt_required()
 def get_pending_users():
-    user = User.query.get(get_jwt_identity())
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
+    if not user:
+        raise APIException("Usuario no encontrado", status_code=404)
+
     if user.role == UserRole.ADMIN:
         users = User.query.filter_by(role=UserRole.PROFESSIONAL, is_validated=False).all()
     elif user.role == UserRole.PROFESSIONAL:
         users = User.query.filter_by(role=UserRole.STUDENT, is_validated=False).all()
     else:
         raise APIException("No autorizado", status_code=403)
+
     return jsonify([u.serialize() for u in users]), 200
+
 
 # VALIDAR USUARIO
 @api.route('/users/<int:id>/validate', methods=['PUT'])
@@ -222,11 +230,11 @@ def get_medical_file_by_user(user_id):
             "created_at": medical_file.created_at.isoformat(),
             "updated_at": medical_file.updated_at.isoformat()
         },
-        "personal_data": medical_file.personal_data.__dict__ if medical_file.personal_data else None,
-        "pathological_background": medical_file.pathological_background.__dict__ if medical_file.pathological_background else None,
-        "family_background": medical_file.family_background.__dict__ if medical_file.family_background else None,
-        "non_pathological_background": medical_file.non_pathological_background.__dict__ if medical_file.non_pathological_background else None,
-        "gynecological_background": medical_file.gynecological_background.__dict__ if medical_file.gynecological_background else None,
+        "personal_data": medical_file.personal_data.serialize() if medical_file.personal_data else None,
+"pathological_background": medical_file.pathological_background.serialize() if medical_file.pathological_background else None,
+"family_background": medical_file.family_background.serialize() if medical_file.family_background else None,
+"non_pathological_background": medical_file.non_pathological_background.serialize() if medical_file.non_pathological_background else None,
+"gynecological_background": medical_file.gynecological_background.serialize() if medical_file.gynecological_background else None,
     }
     return jsonify(result), 200
 
@@ -291,30 +299,17 @@ def family_background(file_id):
     if request.method == 'GET':
         if not fb:
             raise APIException("Antecedentes familiares no encontrados", status_code=404)
-        return jsonify({
-            "id": fb.id,
-            "hypertension": fb.hypertension,
-            "diabetes": fb.diabetes,
-            "cancer": fb.cancer,
-            "heart_disease": fb.heart_disease,
-            "kidney_disease": fb.kidney_disease,
-            "liver_disease": fb.liver_disease,
-            "mental_illness": fb.mental_illness,
-            "congenital_malformations": fb.congenital_malformations,
-            "others": fb.others
-        }), 200
+        return jsonify(fb.serialize()), 200
     else:
         data = request.get_json()
         if not fb:
             raise APIException("Antecedentes familiares no encontrados", status_code=404)
-        for field in [
-            "hypertension", "diabetes", "cancer", "heart_disease", "kidney_disease",
-            "liver_disease", "mental_illness", "congenital_malformations", "others"
-        ]:
+        for field in ["hereditary_diseases", "mental_illnesses", "substance_abuse", "other_family_background"]:
             if field in data:
                 setattr(fb, field, data[field])
         db.session.commit()
         return jsonify({"msg": "Antecedentes familiares actualizados"}), 200
+
 
 @api.route('/medical-files/<int:file_id>/non-pathological-background', methods=['GET', 'PUT'])
 @jwt_required()
@@ -323,41 +318,17 @@ def non_pathological_background(file_id):
     if request.method == 'GET':
         if not npb:
             raise APIException("Antecedentes no patológicos no encontrados", status_code=404)
-        return jsonify({
-            "id": npb.id,
-            "education_level": npb.education_level,
-            "economic_activity": npb.economic_activity,
-            "marital_status": npb.marital_status,
-            "dependents": npb.dependents,
-            "occupation": npb.occupation,
-            "recent_travels": npb.recent_travels,
-            "social_activities": npb.social_activities,
-            "exercise": npb.exercise,
-            "diet_supplements": npb.diet_supplements,
-            "hygiene": npb.hygiene,
-            "tattoos": npb.tattoos,
-            "piercings": npb.piercings,
-            "hobbies": npb.hobbies,
-            "tobacco_use": npb.tobacco_use,
-            "alcohol_use": npb.alcohol_use,
-            "recreational_drugs": npb.recreational_drugs,
-            "addictions": npb.addictions,
-            "others": npb.others
-        }), 200
+        return jsonify(npb.serialize()), 200
     else:
         data = request.get_json()
         if not npb:
             raise APIException("Antecedentes no patológicos no encontrados", status_code=404)
-        for field in [
-            "education_level", "economic_activity", "marital_status", "dependents", "occupation",
-            "recent_travels", "social_activities", "exercise", "diet_supplements", "hygiene",
-            "tattoos", "piercings", "hobbies", "tobacco_use", "alcohol_use", "recreational_drugs",
-            "addictions", "others"
-        ]:
+        for field in ["lifestyle", "exercise", "diet", "sleep", "toxic_habits"]:
             if field in data:
                 setattr(npb, field, data[field])
         db.session.commit()
         return jsonify({"msg": "Antecedentes no patológicos actualizados"}), 200
+
 
 @api.route('/medical-files/<int:file_id>/gynecological-background', methods=['GET', 'PUT'])
 @jwt_required()
@@ -366,29 +337,17 @@ def gynecological_background(file_id):
     if request.method == 'GET':
         if not gb:
             raise APIException("Antecedentes ginecológicos no encontrados", status_code=404)
-        return jsonify({
-            "id": gb.id,
-            "not_applicable": gb.not_applicable,
-            "menarche_age": gb.menarche_age,
-            "pregnancies": gb.pregnancies,
-            "births": gb.births,
-            "c_sections": gb.c_sections,
-            "abortions": gb.abortions,
-            "contraceptive_method": gb.contraceptive_method,
-            "others": gb.others
-        }), 200
+        return jsonify(gb.serialize()), 200
     else:
         data = request.get_json()
         if not gb:
             raise APIException("Antecedentes ginecológicos no encontrados", status_code=404)
-        for field in [
-            "not_applicable", "menarche_age", "pregnancies", "births", "c_sections",
-            "abortions", "contraceptive_method", "others"
-        ]:
+        for field in ["menarche", "menstrual_cycle", "last_menstruation", "pregnancies", "contraceptive_use"]:
             if field in data:
                 setattr(gb, field, data[field])
         db.session.commit()
         return jsonify({"msg": "Antecedentes ginecológicos actualizados"}), 200
+
 
 # AUDITORÍA DEL EXPEDIENTE
 @api.route('/medical-files/<int:file_id>/audit-trail', methods=['GET'])
@@ -407,3 +366,66 @@ def get_audit_trail(file_id):
         }
         for a in audits
     ]), 200
+
+
+# Enpoint para registrar pacientes y crear automáticamente un expediente médico en blanco
+@api.route("/api/register", methods=["POST"])
+def register_patient():
+    data = request.get_json()
+    # ... lógica para crear el paciente ...
+    new_patient = User(...)  # con rol = 'patient'
+    db.session.add(new_patient)
+    db.session.commit()
+
+    # Crear automáticamente el expediente en blanco
+    medical_file = MedicalFile(
+        patient_id=new_patient.id,
+        status=FileStatus.EMPTY  # Enum de tu modelo
+    )
+    db.session.add(medical_file)
+    db.session.commit()
+
+    return jsonify({"msg": "Paciente registrado", "user_id": new_patient.id}), 201
+
+# Enpoint para obtener el expediente médico del paciente actual
+@api.route("/api/patient/medical-file", methods=["GET"])
+@jwt_required()
+@patient_required
+def get_my_medical_file():
+    current_user_id = get_jwt_identity()
+    file = MedicalFile.query.filter_by(patient_id=current_user_id).first()
+    if not file:
+        return jsonify({"msg": "No hay expediente aún"}), 404
+    return jsonify(file.serialize()), 200
+
+# Enpoint para obtener todos los pacientes y sus expedientes médicos
+@api.route("/api/student/patients", methods=["GET"])
+@jwt_required()
+@student_required
+def get_all_patients():
+    patients = User.query.filter_by(role=UserRole.PATIENT).all()
+    result = []
+    for p in patients:
+        file = MedicalFile.query.filter_by(patient_id=p.id).first()
+        result.append({
+            "patient_id": p.id,
+            "patient_name": p.full_name,
+            "email": p.email,
+            "file_status": file.status.value if file else "no_file"
+        })
+    return jsonify(result), 200
+
+# Enpoint para editar el expediente médico de un paciente
+@api.route("/api/student/edit-patient-file/<int:patient_id>", methods=["PUT"])
+@jwt_required()
+@student_required
+def edit_patient_file(patient_id):
+    file = MedicalFile.query.filter_by(patient_id=patient_id).first()
+    if not file:
+        return jsonify({"msg": "Expediente no encontrado"}), 404
+
+    data = request.get_json()
+    # ... llenar los campos del expediente con lo recibido ...
+    file.status = FileStatus.IN_PROGRESS
+    db.session.commit()
+    return jsonify({"msg": "Expediente actualizado"}), 200

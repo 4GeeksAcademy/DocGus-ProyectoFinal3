@@ -16,34 +16,39 @@ import StudentDashLayout from "./pages/StudentDashLayout.jsx";
 import PatientDashLayout from "./pages/PatientDashLayout.jsx";
 import MedicalFile from "./pages/MedicalFile.jsx";
 import MedicalFileViewer from "./pages/MedicalFileViewer.jsx";
+import ExpedientePaciente from "./components/ExpedientePaciente.jsx";
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
-    <Route path="/" element={<Layout />} errorElement={<h1>Not found!</h1>} >
-      <Route path="/" element={<Home />} />
-      <Route path="/single/:theId" element={<Single />} />
-      <Route path="/demo" element={<Demo />} />
-      <Route path="/register" element={<Register />} />
-      <Route path="/login" element={<Login />} />
+    <Route path="/" element={<Layout />} errorElement={<h1>Not found!</h1>}>
+      <Route index element={<Home />} />
+      <Route path="single/:theId" element={<Single />} />
+      <Route path="demo" element={<Demo />} />
+      <Route path="register" element={<Register />} />
+      <Route path="login" element={<Login />} />
 
       {/* Admin Dashboard */}
-      <Route path="/admin" element={<AdminDashLayout />} >
-        <Route path="/admin" element={<UsersTable />} />
+      <Route path="admin" element={<AdminDashLayout />}>
+        {/* IMPORTANTE: Asegúrate que AdminDashLayout incluye <Outlet /> */}
+        <Route index element={<UsersTable />} />
       </Route>
 
       {/* Professional Dashboard */}
-      <Route path="/profe" element={<ProfeDashLayout />} >
-        <Route path="/profe" element={<h1>Listas del profesor</h1>} />
+      <Route path="profe" element={<ProfeDashLayout />}>
+        {/* IMPORTANTE: Asegúrate que ProfeDashLayout incluye <Outlet /> */}
+        <Route index element={<h1>Listas del profesor</h1>} />
       </Route>
-      
+
       {/* Student Dashboard */}
-      <Route path="/student" element={<StudentDashLayout />} >
-        <Route path="/student" element={<MedicalFileViewer />} />
+      <Route path="student" element={<StudentDashLayout />}>
+        {/* IMPORTANTE: Asegúrate que StudentDashLayout incluye <Outlet /> */}
+        <Route index element={<MedicalFileViewer />} />
       </Route>
 
       {/* Patient Dashboard */}
-      <Route path="/patient" element={<PatientDashLayout />} >
-        <Route path="/patient" element={<h1>Expediente Propio</h1>} />
+      <Route path="patient" element={<PatientDashLayout />}>
+        {/* IMPORTANTE: Asegúrate que PatientDashLayout incluye <Outlet /> */}
+        <Route index element={<ExpedientePaciente />} />
       </Route>
     </Route>
   )

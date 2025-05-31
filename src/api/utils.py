@@ -39,3 +39,32 @@ def generate_sitemap(app):
         <p>Start working on your project by following the <a href="https://start.4geeksacademy.com/starters/full-stack" target="_blank">Quick Start</a></p>
         <p>Remember to specify a real endpoint path like: </p>
         <ul style="text-align: left;">"""+links_html+"</ul></div>"
+
+from functools import wraps
+from flask_jwt_extended import get_jwt_identity
+from api.models import User, UserRole
+
+def patient_required(fn):
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        user = User.query.get(get_jwt_identity())
+        if not user or user.role != UserRole.PATIENT:
+            from api.utils import APIException
+            raise APIException("Acceso solo para pacientes", status_code=403)
+        return fn(*args, **kwargs)
+    return wrapper
+
+
+from functools import wraps
+from flask_jwt_extended import get_jwt_identity
+from api.models import User, UserRole
+from api.utils import APIException
+
+def student_required(fn):
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        user = User.query.get(get_jwt_identity())
+        if not user or user.role != UserRole.STUDENT:
+            raise APIException("Acceso solo para estudiantes", status_code=403)
+        return fn(*args, **kwargs)
+    return wrapper
