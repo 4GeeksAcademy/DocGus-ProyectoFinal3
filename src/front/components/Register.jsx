@@ -76,6 +76,23 @@ const Register = () => {
   return (
     <div className="container-fluid min-vh-100 d-flex align-items-center justify-content-center px-3" style={{ backgroundColor: "#800000", color: "#fff" }}>
       <div className="card p-4 w-100" style={{ maxWidth: "900px", backgroundColor: "#343a40", border: "1px solid #fff" }}>
+        <div className="d-flex align-items-start mb-2">
+          {formData.role && (
+            <div
+              style={{
+                background: "#6c757d",
+                color: "#fff",
+                padding: "6px 18px",
+                borderRadius: "8px",
+                fontWeight: "bold",
+                fontSize: "1rem",
+                marginRight: "auto"
+              }}
+            >
+              {formData.role.toUpperCase()}
+            </div>
+          )}
+        </div>
         <h2 className="text-center text-white mb-4">Registro de Usuario</h2>
 
         <form onSubmit={handleSubmit}>
